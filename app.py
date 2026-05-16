@@ -72,19 +72,22 @@ Tone of Voice:
 Begin by greeting the user warmly as a 40-year-old expert coach and ask for their basic data (Phase 1) to get started.
 """
 
-# Initialize Gemini Model
+# Initialize Gemini Model - Using the globally available model name
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-pro",
     system_instruction=system_prompt
 )
 
 # Initialize Chat History in Session State
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-    # Start the conversation with a greeting from the coach
-    chat = model.start_chat(history=[])
-    response = chat.send_message("Hello! Please introduce yourself as the coach and ask for onboarding details.")
-    st.session_state.chat_history.append({"role": "model", "text": response.text})
+    # Secure initialization message
+    try:
+        chat = model.start_chat(history=[])
+        response = chat.send_message("Hello! Please introduce yourself as the coach and ask for onboarding details.")
+        st.session_state.chat_history.append({"role": "model", "text": response.text})
+    except Exception as e:
+        st.error(f"Model initialization error: {e}")
 
 # Display Chat Messages
 for message in st.session_state.chat_history:
@@ -104,7 +107,7 @@ if user_input := st.chat_input("Apna jawab yahan likhein..."):
     
     # Format history for Gemini API
     formatted_history = []
-    for msg in st.session_state.chat_history[:-1]: # exclude the latest user input as it goes into send_message
+    for msg in st.session_state.chat_history[:-1]:
         role = "user" if msg["role"] == "user" else "model"
         formatted_history.append({"role": role, "parts": [msg["text"]]})
     
