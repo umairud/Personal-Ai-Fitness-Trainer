@@ -72,9 +72,9 @@ Tone of Voice:
 Begin by greeting the user warmly as a 40-year-old expert coach and ask for their basic data (Phase 1) to get started.
 """
 
-# Initialize Gemini Model - Using the exact current official model name
+# Initialize Gemini Model - Using the most stable production model name
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash-latest",
+    model_name="gemini-2.5-flash",
     system_instruction=system_prompt
 )
 
@@ -82,8 +82,10 @@ model = genai.GenerativeModel(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
     try:
-        # Generate initial coach response directly using model instead of empty chat
-        response = model.generate_content("Hello! Start the conversation by introducing yourself as a 40-year-old expert Pakistani fitness coach and warmly ask for onboarding details.")
+        # Start a standard chat session
+        st.session_state.chat = model.start_chat(history=[])
+        # Send initial hidden trigger to get greeting from coach
+        response = st.session_state.chat.send_message("Hello! Start the conversation by introducing yourself as a 40-year-old expert Pakistani fitness coach and warmly ask for onboarding details.")
         st.session_state.chat_history.append({"role": "model", "text": response.text})
     except Exception as e:
         st.error(f"Coach initialization error: {e}")
@@ -104,19 +106,12 @@ if user_input := st.chat_input("Apna jawab yahan likhein..."):
         st.write(user_input)
     st.session_state.chat_history.append({"role": "user", "text": user_input})
     
-    # Format history for Gemini API
-    formatted_history = []
-    for msg in st.session_state.chat_history[:-1]:
-        role = "user" if msg["role"] == "user" else "model"
-        formatted_history.append({"role": role, "parts": [msg["text"]]})
-    
-    # Send message to Gemini
+    # Send message to Gemini using the continuous session chat object
     try:
-        chat = model.start_chat(history=formatted_history)
         with st.chat_message("assistant", avatar="💪"):
             message_placeholder = st.empty()
             with st.spinner("Coach soch raha hai..."):
-                response = chat.send_message(user_input)
+                response = st.session_state.chat.send_message(user_input)
             message_placeholder.write(response.text)
         st.session_state.chat_history.append({"role": "model", "text": response.text})
     except Exception as e:
