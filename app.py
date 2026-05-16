@@ -72,25 +72,25 @@ Tone of Voice:
 Begin by greeting the user warmly as a 40-year-old expert coach and ask for their basic data (Phase 1) to get started.
 """
 
-# Initialize Gemini Model - Using the most stable production model name
+# Initialize Gemini Model
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
     system_instruction=system_prompt
 )
 
-# Initialize Chat History in Session State
-if "chat_history" not in st.session_state:
+# FIXED: Properly initialize BOTH chat session and history together
+if "chat" not in st.session_state:
     st.session_state.chat_history = []
     try:
-        # Start a standard chat session
+        # Start the official chat session and save it in state
         st.session_state.chat = model.start_chat(history=[])
-        # Send initial hidden trigger to get greeting from coach
+        # Trigger the welcome message
         response = st.session_state.chat.send_message("Hello! Start the conversation by introducing yourself as a 40-year-old expert Pakistani fitness coach and warmly ask for onboarding details.")
         st.session_state.chat_history.append({"role": "model", "text": response.text})
     except Exception as e:
         st.error(f"Coach initialization error: {e}")
 
-# Display Chat Messages
+# Display Chat Messages from history
 for message in st.session_state.chat_history:
     if message["role"] == "user":
         with st.chat_message("user"):
@@ -101,12 +101,12 @@ for message in st.session_state.chat_history:
 
 # User Input Box
 if user_input := st.chat_input("Apna jawab yahan likhein..."):
-    # Display user message
+    # Display user message instantly
     with st.chat_message("user"):
         st.write(user_input)
     st.session_state.chat_history.append({"role": "user", "text": user_input})
     
-    # Send message to Gemini using the continuous session chat object
+    # Send message using the persistent chat session
     try:
         with st.chat_message("assistant", avatar="💪"):
             message_placeholder = st.empty()
